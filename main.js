@@ -13,21 +13,19 @@ const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource
 
 const program = createProgram(gl, vertexShader, fragmentShader)
 const positionAttributeLocation = gl.getAttribLocation(program, 'a_position')
-const resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
-
-const positionBuffer = gl.createBuffer()
-gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer) 
+let translationLocation = gl.getUniformLocation(program, 'u_translation')
+let colorLocation = gl.getUniformLocation(program, "u_color")
 
 let positions = [
+  120, 270,
+  180, 330, 
+  180, 270,//ears 
+  120, 270,
   60, 270,
-  120, 270,
-  120, 210,
-  120, 210,
   60, 210,
-  60, 270, //head 
-  120, 270,
-  180, 270,
-  180, 330, //ears 
+  60, 210,
+  120, 210,
+  120, 270, //head
   120, 240,
   120, 120,
   240, 120, //body tr1
@@ -45,31 +43,61 @@ let positions = [
   60, 90,
   60, 90, 
   90, 120,
-  180, 120 //hands
-];
+  180, 120 //hands*/
+]
 
-positions = verticalMove(1, positions)
+let stroke = [
+  120, 270,
+  180, 330,
+  180, 270,
+  120, 270,
+  60, 270,
+  60, 210,
+  120, 210,
+  120, 270,
+  120, 240,
+  180, 180,
+  300, 180,
+  360, 240,
+  360, 180,
+  300, 180,
+  300, 0,
+  360, 60,
+  300, 120,
+  300, 60,
+  120, 240,
+  120, 120,
+  90, 120,
+  60, 90,
+  150, 90,
+  180, 120,
+  240, 120,
+  120, 120,
+  120, 240,
+  180, 180
+]
 
-gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW)
+stroke = parseCoords(stroke)
+positions = parseCoords(positions)
 
-gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+
 gl.clearColor(1, 0.7, 0.8, 1)
 gl.clear(gl.COLOR_BUFFER_BIT)
+let color = [0.6, 0.8, 0.2, 1] //green
 gl.useProgram(program)
+gl.uniform4fv(colorLocation, color);
 gl.enableVertexAttribArray(positionAttributeLocation)
-gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height)
-// Указываем атрибуту, как получать данные от positionBuffer (ARRAY_BUFFER)
-const size = 2          // 2 компоненты на итерацию
-const type = gl.FLOAT   // наши данные - 32-битные числа с плавающей точкой
-const normalize = false // не нормализовать данные
-const stride = 0        // 0 = перемещаться на size * sizeof(type) каждую итерацию для получения следующего положения
-const offset = 0       // начинать с начала буфера
-gl.vertexAttribPointer(
-    positionAttributeLocation, size, type, normalize, stride, offset)
+const triangleBuffer = gl.createBuffer()
+gl.bindBuffer(gl.ARRAY_BUFFER, triangleBuffer)
+gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0)
 
-const primitiveType = gl.TRIANGLES
-const count = positions.length
-gl.drawArrays(primitiveType, offset, count)
+const translation = [-0.2, 0.1]
+gl.uniform2fv(translationLocation, translation);
+
+drawTriangles()
+strokeTriangles()
+
+document.onkeydown = handleButtonClick
 
 function createShader(gl, type, source) {
   const shader = gl.createShader(type)  // создание шейдера
@@ -98,45 +126,63 @@ function createProgram(gl, vertexShader, fragmentShader) {
   gl.deleteProgram(program)
 }
 
-function verticalMove(dir, buffer) {
-  return buffer.map((el, i) => {
-    if(i % 2) {
-      return el + dir * 30
-    } 
-    return el
-  })
-}
-
-function horizontalMove(dir, buffer) {
-  return buffer.map((el, i) => {
-    if(i % 2) {
-      return el
-    } 
-    return el + dir * 30
-  })
-}
-
-document.onkeydown = handleButtonClick
-
 function handleButtonClick(e) {
-  switch (e.key) {
-    case 'ArrowUp': 
-      positions = verticalMove(1, positions)
+  let changed = false
+  switch (e.code) {
+    case 'KeyW': 
+    translation[1] += 0.1
+    changed = true
+    break
+    case 'KeyS':
+      translation[1] -= 0.1
+      changed = true
       break
-    case 'ArrowDown':
-      positions = verticalMove(-1, positions)
+    case 'KeyA':
+      translation[0] -=0.1
+      changed = true
       break
-    case 'ArrowLeft':
-      positions = horizontalMove(-1, positions)
+      case 'KeyD':
+      translation[0] += 0.1
+      changed = true
       break
-    case 'ArrowRight':
-      positions = horizontalMove(1, positions)
-      break
+    }
+    
+    if (changed) {
+      drawTriangles()
+    strokeTriangles()
   }
+}
+
+function drawTriangles() {
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW)
-  gl.clearColor(1, 0.7, 0.8, 1)
-  gl.clear(gl.COLOR_BUFFER_BIT)
-  const primitiveType = gl.TRIANGLES
+  let color = [0.6, 0.8, 0.2, 1] //green
+  gl.uniform4fv(colorLocation, color);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.uniform2fv(translationLocation, translation);
+  
   const count = positions.length
-  gl.drawArrays(primitiveType, offset, count)
+  gl.drawArrays(gl.TRIANGLES, 0, count)
+}
+
+function strokeTriangles() {
+  const strokeBuffer = gl.createBuffer()
+  gl.bindBuffer(gl.ARRAY_BUFFER, strokeBuffer)
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(stroke), gl.STATIC_DRAW)
+  const size = 2          
+  const type = gl.FLOAT  
+  const normalize = true 
+  const stride = 0        
+  const offset = 0      
+  gl.vertexAttribPointer(positionAttributeLocation, size, type, normalize, stride, offset)
+  let color = [0.3, 0.4, 0.1, 1] //dark-green
+  gl.uniform4fv(colorLocation, color)
+
+  const count = positions.length
+  gl.drawArrays(gl.LINE_STRIP, 0, count)
+}
+function parseCoords(array) {
+  array = array.map(el => (( el + 30 - gl.canvas.width/2 ) / gl.canvas.width/2))
+  const max = Math.max(...array)
+  array = array.map(el => (el*(0.9/max)).toFixed(2))
+  return array
 }
