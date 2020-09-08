@@ -100,18 +100,18 @@ strokeTriangles()
 document.onkeydown = handleButtonClick
 
 function createShader(gl, type, source) {
-  const shader = gl.createShader(type)  // создание шейдера
-  gl.shaderSource(shader, source)      // устанавливаем шейдеру его программный код
-  gl.compileShader(shader)           // компилируем шейдер
+  const shader = gl.createShader(type)
+  gl.shaderSource(shader, source)
+  gl.compileShader(shader)
   const success = gl.getShaderParameter(shader, gl.COMPILE_STATUS)
-  if (success) {                        // если компиляция прошла успешно - возвращаем шейдер
+  if (success) {
     return shader
   }
-  
+
   console.log(gl.getShaderInfoLog(shader))
   gl.deleteShader(shader)
 }
-  
+
 function createProgram(gl, vertexShader, fragmentShader) {
   const program = gl.createProgram()
   gl.attachShader(program, vertexShader)
@@ -130,26 +130,26 @@ function handleButtonClick(e) {
   let changed = false
   switch (e.code) {
     case 'KeyW': 
-    translation[1] += 0.1
-    changed = true
-    break
+      translation[0] += 0.1
+      changed = true
+      break
     case 'KeyS':
-      translation[1] -= 0.1
+      translation[0] -= 0.1
       changed = true
       break
     case 'KeyA':
       translation[0] -=0.1
       changed = true
       break
-      case 'KeyD':
+    case 'KeyD':
       translation[0] += 0.1
       changed = true
       break
-    }
+  }
     
     if (changed) {
       drawTriangles()
-    strokeTriangles()
+      strokeTriangles()
   }
 }
 
@@ -180,6 +180,7 @@ function strokeTriangles() {
   const count = positions.length
   gl.drawArrays(gl.LINE_STRIP, 0, count)
 }
+
 function parseCoords(array) {
   array = array.map(el => (( el + 30 - gl.canvas.width/2 ) / gl.canvas.width/2))
   const max = Math.max(...array)
